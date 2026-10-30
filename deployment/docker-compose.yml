@@ -1,17 +1,22 @@
-# Deployment auf dem Server: zieht das fertige Image aus der GitHub Container Registry.
-# Daneben liegen eine .env (Vorlage: .env.example im Repo) und ein Verzeichnis data/,
-# das vor dem ersten Start als Benutzer mit UID 1000 angelegt wird (mkdir data).
+# Deployment als Portainer-Stack: zieht das fertige Image aus der GitHub Container Registry.
+# Die Werte unten trägt man in Portainer beim Stack unter "Environment variables" ein.
+# Pflicht: MYWHOOSH_EMAIL, MYWHOOSH_PASSWORD, GARMIN_EMAIL, GARMIN_PASSWORD.
 services:
   sync:
     image: ghcr.io/janniskroeger/mywhoosh-garmin-sync:${IMAGE_TAG:-latest}
     container_name: mywhoosh-garmin-sync
-    env_file: .env
     environment:
+      MYWHOOSH_EMAIL: ${MYWHOOSH_EMAIL}
+      MYWHOOSH_PASSWORD: ${MYWHOOSH_PASSWORD}
+      GARMIN_EMAIL: ${GARMIN_EMAIL}
+      GARMIN_PASSWORD: ${GARMIN_PASSWORD}
+      SYNC_INTERVAL_MINUTES: ${SYNC_INTERVAL_MINUTES:-15}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
       TZ: Europe/Berlin
     volumes:
-      - ./data:/data
+      - mywhoosh-garmin-sync-data:/data
     restart: unless-stopped
-    # Für die MFA-Abfrage von `docker compose run --rm sync login-garmin`
+    # Für die MFA-Abfrage von `mywhoosh-garmin-sync login-garmin` in der Container-Konsole
     stdin_open: true
     tty: true
     logging:
@@ -19,3 +24,6 @@ services:
       options:
         max-size: 10m
         max-file: "3"
+
+volumes:
+  mywhoosh-garmin-sync-data:

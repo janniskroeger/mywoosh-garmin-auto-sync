@@ -29,7 +29,21 @@ docker compose up -d
 
 Ohne Registry baut `docker compose build` das Image lokal unter demselben Namen. Ist das Paket in GitHub privat, vorher mit `docker login ghcr.io` anmelden.
 
-Für den Server liegt unter `deployment/docker-compose.yml` ein eigenständiges Compose, das nur das fertige Image zieht. Dazu gehören im selben Verzeichnis eine `.env` nach Vorlage von `.env.example` und ein vorher angelegtes `data/`. Eine feste Version statt `latest` lässt sich mit `IMAGE_TAG=1.0.0` in der `.env` wählen. Das Image wird auf dem Self-hosted Runner gebaut und hat dessen Architektur (derzeit ARM64), es läuft also nur auf einem Server mit derselben Architektur.
+### Deployment mit Portainer
+
+`deployment/docker-compose.yml` ist für einen Portainer-Stack gedacht und zieht nur das fertige Image.
+
+1. In Portainer unter **Stacks → Add stack** den Inhalt der Datei in den Web-Editor kopieren.
+2. Unter **Environment variables** eintragen: `MYWHOOSH_EMAIL`, `MYWHOOSH_PASSWORD`, `GARMIN_EMAIL`, `GARMIN_PASSWORD`. Optional `IMAGE_TAG` (z. B. `1.0.0` statt `latest`), `SYNC_INTERVAL_MINUTES`, `LOG_LEVEL`.
+3. Ist das Paket in GitHub privat, unter **Registries** `ghcr.io` mit GitHub-Benutzer und einem Token mit `read:packages` anlegen.
+4. **Deploy the stack.**
+
+Die Daten liegen im benannten Volume `mywhoosh-garmin-sync-data`, deshalb ist kein `data/`-Ordner nötig. Prüfung und Notfall-Login laufen über **Containers → mywhoosh-garmin-sync → Console** (Command `/bin/sh`):
+
+- `mywhoosh-garmin-sync dry-run` legt Original und umgeschriebene Datei unter `/data/dry-run/` im Volume ab.
+- `mywhoosh-garmin-sync login-garmin` fragt den MFA-Code ab. Danach den Container in Portainer neu starten.
+
+Das Image wird auf dem Self-hosted Runner gebaut und hat dessen Architektur (derzeit ARM64). Es läuft also nur auf einem Server mit derselben Architektur.
 
 ### Konfiguration
 
