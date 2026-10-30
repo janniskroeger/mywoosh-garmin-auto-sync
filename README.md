@@ -29,6 +29,8 @@ docker compose up -d
 
 Ohne Registry baut `docker compose build` das Image lokal unter demselben Namen. Ist das Paket in GitHub privat, vorher mit `docker login ghcr.io` anmelden.
 
+Für den Server liegt unter `deployment/docker-compose.yml` ein eigenständiges Compose, das nur das fertige Image zieht. Dazu gehören im selben Verzeichnis eine `.env` nach Vorlage von `.env.example` und ein vorher angelegtes `data/`. Eine feste Version statt `latest` lässt sich mit `IMAGE_TAG=1.0.0` in der `.env` wählen. Das Image wird auf dem Self-hosted Runner gebaut und hat dessen Architektur (derzeit ARM64), es läuft also nur auf einem Server mit derselben Architektur.
+
 ### Konfiguration
 
 | Variable | Pflicht | Bedeutung |

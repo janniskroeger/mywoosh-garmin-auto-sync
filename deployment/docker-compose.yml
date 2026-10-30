@@ -1,0 +1,21 @@
+# Deployment auf dem Server: zieht das fertige Image aus der GitHub Container Registry.
+# Daneben liegen eine .env (Vorlage: .env.example im Repo) und ein Verzeichnis data/,
+# das vor dem ersten Start als Benutzer mit UID 1000 angelegt wird (mkdir data).
+services:
+  sync:
+    image: ghcr.io/janniskroeger/mywhoosh-garmin-sync:${IMAGE_TAG:-latest}
+    container_name: mywhoosh-garmin-sync
+    env_file: .env
+    environment:
+      TZ: Europe/Berlin
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
+    # Für die MFA-Abfrage von `docker compose run --rm sync login-garmin`
+    stdin_open: true
+    tty: true
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
