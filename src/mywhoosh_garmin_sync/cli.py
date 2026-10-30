@@ -78,8 +78,10 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def _configure_logging(level: str) -> None:
+    # force=True: fit-tool already calls logging.basicConfig on import, which would
+    # otherwise turn this call into a no-op and leave the root logger at WARNING.
     logging.basicConfig(
-        level=level, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
+        level=level, format="%(asctime)s %(levelname)s %(name)s: %(message)s", force=True
     )
     for name in _QUIET_LOGGERS:
         logging.getLogger(name).setLevel(logging.WARNING)

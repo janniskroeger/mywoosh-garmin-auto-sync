@@ -21,6 +21,16 @@ ENV_NAMES = [
 ]
 
 
+_REAL_CONFIGURE_LOGGING = cli._configure_logging
+
+
+@pytest.fixture(autouse=True)
+def keep_test_logging(monkeypatch):
+    # _configure_logging uses force=True and would remove pytest's caplog handler;
+    # it is tested on its own in test_configure_logging_overrides_setup_done_by_libraries.
+    monkeypatch.setattr(cli, "_configure_logging", lambda level: None)
+
+
 @pytest.fixture
 def data_dir(tmp_path, monkeypatch):
     for name in ENV_NAMES:
@@ -233,3 +243,26 @@ def test_data_dir_is_created(tmp_path, data_dir, monkeypatch, run_once_calls):
 
     assert cli.main(["once"]) == 0
     assert target.is_dir()
+
+
+@pytest.fixture
+def root_logger():
+    root = logging.getLogger()
+    handlers, level = root.handlers[:], root.level
+    yield root
+    root.handlers[:] = handlers
+    root.setLevel(level)
+
+
+def test_configure_logging_overrides_setup_done_by_libraries(root_logger):
+    # fit-tool calls logging.basicConfig(format="%(asctime)s %(message)s") on import,
+    # which leaves the root logger at WARNING with its own handler.
+    root_logger.handlers[:] = []
+    logging.basicConfig(format="%(asctime)s %(message)s")
+
+    _REAL_CONFIGURE_LOGGING("INFO")
+
+    assert root_logger.level == logging.INFO
+    assert [h.formatter._fmt for h in root_logger.handlers] == [
+        "%(asctime)s %(levelname)s %(name)s: %(message)s"
+    ]
