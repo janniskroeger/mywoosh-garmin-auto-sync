@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  test:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+        with:
+          version: '0.13.0'
+      - run: uv sync --frozen
+      # Der Test mit einer echten MyWhoosh-Datei wird übersprungen, weil echte Fahrtdaten nicht im Repo liegen
+      - run: uv run pytest -q
+
+  release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: test
+    runs-on: self-hosted
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    outputs:
+      version: ${{ steps.semantic.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - id: semantic
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx -p semantic-release -p @semantic-release/exec semantic-release
+
+  docker:
+    if: needs.release.outputs.version != ''
+    needs: release
+    runs-on: self-hosted
+    env:
+      BUILDAH_ISOLATION: chroot
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/metadata-action@v6
+        id: meta
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/mywhoosh-garmin-sync
+          tags: |
+            type=raw,value=${{ needs.release.outputs.version }}
+            type=raw,value=latest
+      - uses: redhat-actions/buildah-build@v3
+        id: build
+        with:
+          image: ghcr.io/${{ github.repository_owner }}/mywhoosh-garmin-sync
+          tags: ${{ steps.meta.outputs.tags }}
+          context: .
+          containerfiles: Dockerfile
+      - uses: redhat-actions/push-to-registry@v3
+        with:
+          image: ${{ steps.build.outputs.image }}
+          tags: ${{ steps.build.outputs.tags }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}

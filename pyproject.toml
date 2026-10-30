@@ -1,0 +1,30 @@
+[project]
+name = "mywhoosh-garmin-sync"
+version = "0.1.0"
+description = "Sync MyWhoosh indoor rides to Garmin Connect"
+requires-python = ">=3.12"
+dependencies = [
+    "requests",
+    "pycryptodome",
+    "garminconnect>=0.3.20,<0.4",
+    "fit-tool>=0.9.17,<0.10",
+]
+
+[project.scripts]
+mywhoosh-garmin-sync = "mywhoosh_garmin_sync.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "responses",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mywhoosh_garmin_sync"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
