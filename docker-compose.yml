@@ -1,0 +1,12 @@
+services:
+  sync:
+    # Built and published by GitHub Actions; `build` allows a local build instead.
+    image: ghcr.io/janniskroeger/mywhoosh-garmin-sync:latest
+    build: .
+    env_file: .env
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
+    # Needed for the interactive MFA prompt of `login-garmin`.
+    stdin_open: true
+    tty: true
